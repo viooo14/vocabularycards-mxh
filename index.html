@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📇 完整词表 · 背诵卡片</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #2b5876 0%, #4e4376 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .header {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .stats {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .stat-box {
+            background: rgba(255,255,255,0.2);
+            backdrop-filter: blur(10px);
+            padding: 10px 20px;
+            border-radius: 20px;
+            color: white;
+            font-size: 0.9em;
+            font-weight: 500;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            background: white;
+            color: #2b5876;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            font-weight: 600;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+        
+        button.active {
+            background: #ffd700;
+            color: #333;
+        }
+        
+        .card-container {
+            perspective: 1000px;
+            width: 90%;
+            max-width: 500px;
+            height: 300px;
+            margin-bottom: 30px;
+        }
+        
+        .card {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.6s;
+            cursor: pointer;
+        }
+        
+        .card.flipped {
+            transform: rotateY(180deg);
+        }
+        
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            background: white;
+        }
+        
+        .card-front {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            transition: background 0.3s;
+        }
+        
+        .card-back {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            transform: rotateY(180deg);
+            color: white;
+        }
+        
+        .word {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+            text-align: center;
+            word-break: break-word;
+        }
+        
+        .phonetic {
+            font-size: 1.2em;
+            color: #666;
+            margin-bottom: 15px;
+            min-height: 1.8em; /* 留空时占位 */
+        }
+        
+        .meaning {
+            font-size: 2em;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 10px;
+            word-break: break-word;
+        }
+        
+        .pos {
+            font-size: 1.1em;
+            opacity: 0.9;
+            background: rgba(255,255,255,0.3);
+            padding: 5px 15px;
+            border-radius: 15px;
+        }
+        
+        .hint {
+            position: absolute;
+            bottom: 20px;
+            font-size: 0.9em;
+            color: #999;
+        }
+        
+        .navigation {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+        
+        .nav-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+            padding: 0;
+        }
+        
+        .progress-bar {
+            width: 200px;
+            height: 6px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: white;
+            transition: width 0.3s;
+        }
+        
+        .list-view {
+            display: none;
+            width: 100%;
+            max-width: 800px;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-height: 70vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+        
+        .list-view.active {
+            display: block;
+        }
+        
+        .list-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            align-items: center;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .list-item:hover {
+            background: #f5f5f5;
+            border-radius: 10px;
+        }
+        
+        .list-word {
+            font-weight: bold;
+            color: #4e4376;
+            font-size: 1.2em;
+        }
+        
+        .list-meaning {
+            color: #666;
+            max-width: 50%;
+            text-align: right;
+        }
+        
+        .hide-btn {
+            margin-top: 20px;
+            background: #ff6b6b;
+            color: white;
+        }
+        
+        .mastered-badge {
+            background: #28a745;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.7em;
+            margin-left: 8px;
+        }
+        
+        @media print {
+            body {
+                background: white;
+            }
+            .controls, .navigation, .header {
+                display: none;
+            }
+            .card-container {
+                page-break-after: always;
+                height: 250px;
+                margin: 20px auto;
+            }
+            .card {
+                transform: none !important;
+            }
+            .card-back {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📚 完整词表 · 沉浸卡片</h1>
+        <p>点击翻转 | 键盘 ← → / 空格 | 已掌握自动保存</p>
+    </div>
+    
+    <div class="stats">
+        <div class="stat-box">📖 总单词: <span id="total">0</span></div>
+        <div class="stat-box">🔖 当前: <span id="current">1</span></div>
+        <div class="stat-box">✅ 已掌握: <span id="mastered">0</span></div>
+    </div>
+    
+    <div class="controls">
+        <button onclick="shuffleCards()">🔀 随机打乱</button>
+        <button onclick="toggleList()">📋 列表模式</button>
+        <button onclick="resetProgress()">🔄 重置进度</button>
+        <button onclick="window.print()">🖨️ 打印卡片</button>
+    </div>
+    
+    <div class="card-container" id="cardContainer">
+        <div class="card" id="card" onclick="flipCard()">
+            <div class="card-face card-front" id="cardFront">
+                <div class="word" id="cardWord">Word</div>
+                <div class="phonetic" id="cardPhonetic"></div>
+                <div class="hint">点击翻转查看释义</div>
+            </div>
+            <div class="card-face card-back">
+                <div class="meaning" id="cardMeaning">单词释义</div>
+                <div class="pos" id="cardPos">词性</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="navigation" id="navigation">
+        <button class="nav-btn" onclick="prevCard()">◀</button>
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <button class="nav-btn" onclick="nextCard()">▶</button>
+        <button class="nav-btn" onclick="markMastered()" style="background: #4ecdc4; color: white;" title="标记 (M)">✓</button>
+    </div>
+    
+    <div class="list-view" id="listView">
+        <h2 style="margin-bottom: 20px; color: #333;">📑 所有词汇 (点击跳转)</h2>
+        <div id="listContent"></div>
+        <button class="hide-btn" onclick="toggleList()">返回卡片模式</button>
+    </div>
+
+    <script>
+        // ---------- 词库数据 (基于之前整理的完整词表, 去重, 按字母序) ----------
+        const vocabulary = [
+            { word: "a practical joke", phonetic: "", meaning: "恶作剧", pos: "phrase." },
+            { word: "a whole lot", phonetic: "", meaning: "许多", pos: "phrase." },
+            { word: "acrobatics", phonetic: "", meaning: "杂技", pos: "n." },
+            { word: "accumulate", phonetic: "", meaning: "积累；搜集", pos: "v." },
+            { word: "add up", phonetic: "", meaning: "把...加起来；合计", pos: "phrase." },
+            { word: "adjectives", phonetic: "", meaning: "形容词", pos: "n." },
+            { word: "administering", phonetic: "", meaning: "管理", pos: "v." },
+            { word: "admiration", phonetic: "", meaning: "钦佩", pos: "n." },
+            { word: "advance", phonetic: "", meaning: "前进", pos: "v." },
+            { word: "advantage", phonetic: "", meaning: "优势", pos: "n." },
+            { word: "afford", phonetic: "", meaning: "负担得起；提供", pos: "vt." },
+            { word: "affordable", phonetic: "", meaning: "负担得起的", pos: "adj." },
+            { word: "amazement", phonetic: "", meaning: "惊奇，惊讶", pos: "n." },
+            { word: "amusement", phonetic: "", meaning: "娱乐，消遣", pos: "n." },
+            { word: "amused", phonetic: "", meaning: "被逗乐的", pos: "adj." },
+            { word: "and so forth", phonetic: "", meaning: "等等", pos: "phrase." },
+            { word: "apparently", phonetic: "", meaning: "显然", pos: "adv." },
+            { word: "appetite", phonetic: "", meaning: "爱好；食欲", pos: "n." },
+            { word: "application", phonetic: "", meaning: "申请；应用", pos: "n." },
+            { word: "appreciate", phonetic: "", meaning: "欣赏的；感激的", pos: "adj." },
+            { word: "apprentice", phonetic: "", meaning: "学徒，助手", pos: "n." },
+            { word: "approach", phonetic: "", meaning: "方法；接近", pos: "n./v." },
+            { word: "arrange", phonetic: "", meaning: "安排", pos: "v." },
+            { word: "artistic", phonetic: "", meaning: "艺术的", pos: "adj." },
+            { word: "as well as", phonetic: "", meaning: "也，以及", pos: "phrase." },
+            { word: "assessing", phonetic: "", meaning: "评估", pos: "v." },
+            { word: "at one's request", phonetic: "", meaning: "依照某人的请求", pos: "phrase." },
+            { word: "attain", phonetic: "", meaning: "取得，获得", pos: "vt." },
+            { word: "attached", phonetic: "", meaning: "附上；依恋", pos: "v./adj." },
+            { word: "automation", phonetic: "", meaning: "自动化", pos: "n." },
+            { word: "awareness", phonetic: "", meaning: "意识", pos: "n." },
+            { word: "back on track", phonetic: "", meaning: "回到正轨", pos: "phrase." },
+            { word: "balcony", phonetic: "", meaning: "阳台", pos: "n." },
+            { word: "bar", phonetic: "", meaning: "条，棒；酒吧", pos: "n." },
+            { word: "be", phonetic: "", meaning: "是；有；位于", pos: "v." },
+            { word: "be carried away", phonetic: "", meaning: "得意忘形", pos: "phrase." },
+            { word: "be hot on", phonetic: "", meaning: "迷恋", pos: "phrase." },
+            { word: "believe in", phonetic: "", meaning: "相信，信任", pos: "phrase." },
+            { word: "bend to one's will", phonetic: "", meaning: "屈服于某人的意愿", pos: "phrase." },
+            { word: "besides", phonetic: "", meaning: "此外", pos: "adv." },
+            { word: "beyond description", phonetic: "", meaning: "无法形容", pos: "phrase." },
+            { word: "bite one's tongue", phonetic: "", meaning: "忍住不说", pos: "phrase." },
+            { word: "bittersweet", phonetic: "", meaning: "又苦又甜的", pos: "adj." },
+            { word: "blanketed", phonetic: "", meaning: "覆盖", pos: "v." },
+            { word: "bloody", phonetic: "", meaning: "血迹斑斑的", pos: "adj." },
+            { word: "blow down", phonetic: "", meaning: "吹倒", pos: "phrase." },
+            { word: "boil over", phonetic: "", meaning: "沸腾溢出；爆发", pos: "phrase." },
+            { word: "boost", phonetic: "", meaning: "促进；加强", pos: "v./n." },
+            { word: "both ... and ...", phonetic: "", meaning: "既…又…", pos: "phrase." },
+            { word: "boyhood", phonetic: "", meaning: "孩童期", pos: "n." },
+            { word: "brand", phonetic: "", meaning: "品牌；商标", pos: "n." },
+            { word: "breeze", phonetic: "", meaning: "微风", pos: "n." },
+            { word: "breathlessly", phonetic: "", meaning: "气喘地；屏息地", pos: "adv." },
+            { word: "budget", phonetic: "", meaning: "预算", pos: "n." },
+            { word: "burst in on", phonetic: "", meaning: "闯入；突然出现", pos: "phrase." },
+            { word: "by and by", phonetic: "", meaning: "不久；过一会儿", pos: "phrase." },
+            { word: "called", phonetic: "", meaning: "叫作，称作", pos: "adj." },
+            { word: "carnival", phonetic: "", meaning: "狂欢节", pos: "n." },
+            { word: "carpet", phonetic: "", meaning: "地毯", pos: "n." },
+            { word: "carries on", phonetic: "", meaning: "继续做", pos: "phr." },
+            { word: "cater", phonetic: "", meaning: "迎合；提供饮食", pos: "v." },
+            { word: "cherish", phonetic: "", meaning: "珍惜；怀念", pos: "v." },
+            { word: "choke", phonetic: "", meaning: "阻塞；窒息", pos: "v." },
+            { word: "church", phonetic: "", meaning: "教堂", pos: "n." },
+            { word: "circumstances", phonetic: "", meaning: "条件；环境", pos: "n." },
+            { word: "client", phonetic: "", meaning: "客户", pos: "n." },
+            { word: "cloth", phonetic: "", meaning: "布，织物", pos: "n." },
+            { word: "collaboration", phonetic: "", meaning: "合作", pos: "n." },
+            { word: "collective", phonetic: "", meaning: "共同的；集体的", pos: "adj." },
+            { word: "commit", phonetic: "", meaning: "承诺；犯（错）", pos: "v." },
+            { word: "committed", phonetic: "", meaning: "尽心尽力的", pos: "adj." },
+            { word: "community", phonetic: "", meaning: "社区；共同体", pos: "n." },
+            { word: "comparison", phonetic: "", meaning: "比较", pos: "n." },
+            { word: "competition", phonetic: "", meaning: "竞争", pos: "n." },
+            { word: "competitor", phonetic: "", meaning: "竞争者", pos: "n." },
+            { word: "complete", phonetic: "", meaning: "完成；完全的", pos: "v./adj." },
+            { word: "completely", phonetic: "", meaning: "完全地", pos: "adv." },
+            { word: "conclusion", phonetic: "", meaning: "结论", pos: "n." },
+            { word: "concrete", phonetic: "", meaning: "具体的；混凝土制的", pos: "adj./n." },
+            { word: "conflict", phonetic: "", meaning: "冲突", pos: "n./v." },
+            { word: "confirming", phonetic: "", meaning: "确认", pos: "v." },
+            { word: "consequence", phonetic: "", meaning: "结果", pos: "n." },
+            { word: "consent", phonetic: "", meaning: "同意", pos: "n." },
+            { word: "construct", phonetic: "", meaning: "建造", pos: "vt." },
+            { word: "contradict", phonetic: "", meaning: "反驳；相矛盾", pos: "vt." },
+            { word: "conventional", phonetic: "", meaning: "常规的", pos: "adj." },
+            { word: "corrupt", phonetic: "", meaning: "腐败的", pos: "adj." },
+            { word: "cost", phonetic: "/kɒst/", meaning: "花费", pos: "n./v." },
+            { word: "county", phonetic: "", meaning: "县；郡", pos: "n." },
+            { word: "crash", phonetic: "", meaning: "死机；崩溃", pos: "n." },
+            { word: "crown", phonetic: "", meaning: "皇冠", pos: "n." },
+            { word: "crucial", phonetic: "", meaning: "关键的", pos: "adj." },
+            { word: "cultivate", phonetic: "", meaning: "耕作；种植；建立", pos: "v." },
+            { word: "deafen", phonetic: "", meaning: "使听不见", pos: "vt." },
+            { word: "decay", phonetic: "", meaning: "腐烂；衰退", pos: "n." },
+            { word: "declaration", phonetic: "", meaning: "宣言，声明", pos: "n." },
+            { word: "defining", phonetic: "", meaning: "下定义", pos: "v." },
+            { word: "depressing", phonetic: "", meaning: "令人沮丧的", pos: "adj." },
+            { word: "deserve", phonetic: "", meaning: "值得，应该得到", pos: "vt." },
+            { word: "design", phonetic: "", meaning: "设计", pos: "n." },
+            { word: "determination", phonetic: "", meaning: "决心", pos: "n." },
+            { word: "dictionary", phonetic: "", meaning: "字典", pos: "n." },
+            { word: "digest", phonetic: "", meaning: "消化；领会", pos: "v." },
+            { word: "dimension", phonetic: "", meaning: "面积；维度", pos: "n." },
+            { word: "directions", phonetic: "", meaning: "方向；指南", pos: "n." },
+            { word: "directly", phonetic: "", meaning: "直接地", pos: "adv." },
+            { word: "dirt", phonetic: "", meaning: "泥土", pos: "n." },
+            { word: "disaster", phonetic: "", meaning: "灾难", pos: "n." },
+            { word: "dish up", phonetic: "", meaning: "装盘上菜", pos: "phrase." },
+            { word: "distinct", phonetic: "", meaning: "不同的", pos: "adj." },
+            { word: "distraction", phonetic: "", meaning: "分心的事；娱乐", pos: "n." },
+            { word: "disturb", phonetic: "", meaning: "打扰，扰乱", pos: "vt." },
+            { word: "drizzle", phonetic: "", meaning: "细雨", pos: "n./v." },
+            { word: "do away with", phonetic: "", meaning: "废除；结束", pos: "phrase." },
+            { word: "do the trick", phonetic: "", meaning: "有效，达到目的", pos: "phras." },
+            { word: "downstairs", phonetic: "", meaning: "到楼下", pos: "adv." },
+            { word: "downward", phonetic: "", meaning: "下降的，向下的", pos: "adj." },
+            { word: "dozen", phonetic: "", meaning: "一打；许多", pos: "n." },
+            { word: "drama", phonetic: "", meaning: "戏剧", pos: "n." },
+            { word: "earn straight A's", phonetic: "", meaning: "不公正的", pos: "phr." },
+            { word: "eastward", phonetic: "", meaning: "向东的", pos: "adj." },
+            { word: "economics", phonetic: "", meaning: "经济学", pos: "n." },
+            { word: "educators", phonetic: "", meaning: "教育家", pos: "n." },
+            { word: "effective", phonetic: "", meaning: "有效的", pos: "adj." },
+            { word: "election", phonetic: "", meaning: "选举", pos: "n." },
+            { word: "embracing", phonetic: "", meaning: "拥抱；欣然接受", pos: "v." },
+            { word: "emphasis", phonetic: "", meaning: "强调；重点", pos: "n." },
+            { word: "enable", phonetic: "", meaning: "使能够", pos: "vt." },
+            { word: "encountered", phonetic: "", meaning: "遇到", pos: "v." },
+            { word: "encouragement", phonetic: "", meaning: "鼓励", pos: "n." },
+            { word: "endangered", phonetic: "", meaning: "有灭绝危险的", pos: "adj." },
+            { word: "ends up", phonetic: "", meaning: "最终成为", pos: "phr." },
+            { word: "enough", phonetic: "", meaning: "足够的", pos: "adj." },
+            { word: "ever", phonetic: "", meaning: "前夕 (应为eve)", pos: "n." },
+            { word: "ever since", phonetic: "", meaning: "自从……以来", pos: "phr." },
+            { word: "evidence", phonetic: "", meaning: "证据", pos: "n." },
+            { word: "evolved", phonetic: "", meaning: "进化", pos: "v." },
+            { word: "exaggerated", phonetic: "", meaning: "夸张的", pos: "adj." },
+            { word: "example", phonetic: "", meaning: "榜样；典范", pos: "n." },
+            { word: "exhaust", phonetic: "", meaning: "用尽；使精疲力尽", pos: "v." },
+            { word: "exhausted", phonetic: "", meaning: "筋疲力尽的", pos: "adj." },
+            { word: "expo", phonetic: "", meaning: "博览会", pos: "n." },
+            { word: "explode", phonetic: "", meaning: "爆炸", pos: "v." },
+            { word: "express", phonetic: "", meaning: "表达", pos: "v." },
+            { word: "extend", phonetic: "", meaning: "扩大；延伸", pos: "v." },
+            { word: "extreme", phonetic: "", meaning: "极端", pos: "n." },
+            { word: "facility", phonetic: "", meaning: "设施", pos: "n." },
+            { word: "faint", phonetic: "", meaning: "微弱的；昏倒", pos: "adj./v." },
+            { word: "fareness", phonetic: "", meaning: "不怕的；无畏的", pos: "adj." },
+            { word: "fascinated", phonetic: "", meaning: "着迷的", pos: "adj." },
+            { word: "feathery", phonetic: "", meaning: "羽毛般的", pos: "adj." },
+            { word: "feed on", phonetic: "", meaning: "以……为食物", pos: "phr." },
+            { word: "feel like", phonetic: "", meaning: "想要；感到好", pos: "phrase." },
+            { word: "female", phonetic: "", meaning: "女性；雌性", pos: "n." },
+            { word: "fertilizer", phonetic: "", meaning: "肥料", pos: "n." },
+            { word: "festival", phonetic: "", meaning: "节日", pos: "n." },
+            { word: "fill up", phonetic: "", meaning: "装满", pos: "phrase." },
+            { word: "find out", phonetic: "", meaning: "查明；发现", pos: "phrase." },
+            { word: "firmly", phonetic: "", meaning: "坚定地", pos: "adv." },
+            { word: "fisherman", phonetic: "", meaning: "渔民", pos: "n." },
+            { word: "fishing", phonetic: "", meaning: "钓鱼", pos: "n." },
+            { word: "fit", phonetic: "", meaning: "适应；合适的", pos: "v./adj." },
+            { word: "footwear", phonetic: "", meaning: "鞋类", pos: "n." },
+            { word: "forgive", phonetic: "", meaning: "原谅", pos: "vt." },
+            { word: "fossil", phonetic: "", meaning: "化石", pos: "n." },
+            { word: "frequently", phonetic: "", meaning: "频繁地", pos: "adv." },
+            { word: "frontier", phonetic: "", meaning: "边界；尚待开发的领域", pos: "n." },
+            { word: "frustrated", phonetic: "", meaning: "失败的，受挫的", pos: "adj." },
+            { word: "garage", phonetic: "/ɡəˈrɑːʒ/", meaning: "车库", pos: "n." },
+            { word: "garden", phonetic: "", meaning: "花园；菜园", pos: "n." },
+            { word: "garlic", phonetic: "", meaning: "大蒜", pos: "n." },
+            { word: "gathered", phonetic: "", meaning: "收集；聚集", pos: "v." },
+            { word: "generally", phonetic: "", meaning: "一般地", pos: "adv." },
+            { word: "giant", phonetic: "", meaning: "巨大的", pos: "adj." },
+            { word: "go hat in hand", phonetic: "", meaning: "谦卑地要", pos: "phr." },
+            { word: "goose", phonetic: "", meaning: "鹅", pos: "n." },
+            { word: "gradually", phonetic: "", meaning: "逐渐地", pos: "adv." },
+            { word: "grandson", phonetic: "", meaning: "孙子", pos: "n." },
+            { word: "gratitude", phonetic: "", meaning: "感激", pos: "n." },
+            { word: "gravity", phonetic: "", meaning: "重力", pos: "n." },
+            { word: "grow up", phonetic: "", meaning: "成长", pos: "phrase." },
+            { word: "handbag", phonetic: "", meaning: "手提包", pos: "n." },
+            { word: "hang up", phonetic: "", meaning: "挂断电话；延迟", pos: "phr." },
+            { word: "heavily", phonetic: "", meaning: "在很大程度上", pos: "adv." },
+            { word: "hesitant", phonetic: "/ˈhezɪtənt/", meaning: "犹豫不决的", pos: "adj." },
+            { word: "highly", phonetic: "", meaning: "非常；赞赏地", pos: "adv." },
+            { word: "highly thought", phonetic: "", meaning: "高度评价", pos: "phr." },
+            { word: "himself", phonetic: "", meaning: "自己", pos: "pron." },
+            { word: "hire", phonetic: "", meaning: "租用；雇用", pos: "v." },
+            { word: "hold one's attention", phonetic: "", meaning: "保持某人注意力", pos: "phrase." },
+            { word: "homemade", phonetic: "", meaning: "自家做的", pos: "adj." },
+            { word: "hope", phonetic: "", meaning: "希望", pos: "n." },
+            { word: "hopeful", phonetic: "", meaning: "满怀希望的", pos: "adj." },
+            { word: "humbly", phonetic: "", meaning: "谦卑地", pos: "adv." },
+            { word: "humor", phonetic: "", meaning: "幽默", pos: "n." },
+            { word: "hunt", phonetic: "", meaning: "寻找；打猎", pos: "vi." },
+            { word: "hurried", phonetic: "", meaning: "匆忙完成的", pos: "adj." },
+            { word: "hurriedly", phonetic: "", meaning: "匆忙地", pos: "adv." },
+            { word: "immune", phonetic: "", meaning: "免疫的", pos: "adj." },
+            { word: "importance", phonetic: "", meaning: "重要性", pos: "n." },
+            { word: "impressed", phonetic: "", meaning: "印象深刻的", pos: "adj." },
+            { word: "in control of", phonetic: "", meaning: "掌管着", pos: "phr." },
+            { word: "in depth", phonetic: "", meaning: "全面的（地）", pos: "phrase." },
+            { word: "in despair", phonetic: "", meaning: "绝望", pos: "phrase." },
+            { word: "in support of", phonetic: "", meaning: "支持", pos: "phrase." },
+            { word: "in time", phonetic: "", meaning: "及时；最终", pos: "phrase." },
+            { word: "incident", phonetic: "", meaning: "事故；事件", pos: "n." },
+            { word: "incomplete", phonetic: "", meaning: "不完整的", pos: "adj." },
+            { word: "indeed", phonetic: "", meaning: "确实", pos: "adv." },
+            { word: "indifferent", phonetic: "", meaning: "漠不关心的", pos: "adj." },
+            { word: "induce", phonetic: "", meaning: "引诱；引起", pos: "v." },
+            { word: "industry", phonetic: "", meaning: "工业；产业", pos: "n." },
+            { word: "inject", phonetic: "", meaning: "注射；投入", pos: "v." },
+            { word: "instead of", phonetic: "", meaning: "代替", pos: "phrase." },
+            { word: "intense", phonetic: "", meaning: "强烈的；激烈的", pos: "adj." },
+            { word: "intervention", phonetic: "", meaning: "干预，介入", pos: "n." },
+            { word: "jog", phonetic: "", meaning: "慢跑", pos: "v." },
+            { word: "joyous", phonetic: "", meaning: "高兴的", pos: "adj." },
+            { word: "kebab", phonetic: "", meaning: "烤肉串", pos: "n." },
+            { word: "kind", phonetic: "", meaning: "种类", pos: "n." },
+            { word: "land in", phonetic: "", meaning: "使陷入；着陆在", pos: "phrase." },
+            { word: "laptop", phonetic: "", meaning: "笔记本电脑", pos: "n." },
+            { word: "lasted", phonetic: "", meaning: "持续", pos: "v." },
+            { word: "leading", phonetic: "", meaning: "最重要的；一流的", pos: "adj." },
+            { word: "lecture", phonetic: "", meaning: "讲座，讲课", pos: "n." },
+            { word: "led", phonetic: "", meaning: "导致；带领", pos: "v." },
+            { word: "let out", phonetic: "", meaning: "放出；泄露", pos: "phrase." },
+            { word: "look forward to", phonetic: "", meaning: "盼望", pos: "phrase." },
+            { word: "look to", phonetic: "", meaning: "朝...看去；朝向", pos: "phrase." },
+            { word: "loose", phonetic: "", meaning: "自由的，松开的", pos: "adj." },
+            { word: "lose control of", phonetic: "", meaning: "失去控制", pos: "phras." },
+            { word: "lose track of", phonetic: "", meaning: "失去联系", pos: "phrase." },
+            { word: "make fun of", phonetic: "", meaning: "取笑", pos: "phrase." },
+            { word: "make it", phonetic: "", meaning: "成功", pos: "phrase." },
+            { word: "make something of oneself", phonetic: "", meaning: "有所成就", pos: "phrase." },
+            { word: "make-up", phonetic: "", meaning: "化妆品", pos: "n." },
+            { word: "man-made", phonetic: "", meaning: "人造的", pos: "adj." },
+            { word: "mankind", phonetic: "", meaning: "人类", pos: "n." },
+            { word: "martial", phonetic: "", meaning: "战争的，军事的", pos: "adj." },
+            { word: "material", phonetic: "", meaning: "材料", pos: "n." },
+            { word: "measures", phonetic: "", meaning: "措施；测量", pos: "n./v." },
+            { word: "melts", phonetic: "", meaning: "融化", pos: "v." },
+            { word: "microwave", phonetic: "", meaning: "微波炉", pos: "n." },
+            { word: "might", phonetic: "", meaning: "或许，可能", pos: "aux." },
+            { word: "mild", phonetic: "", meaning: "平和的", pos: "adj." },
+            { word: "mirror", phonetic: "", meaning: "镜子", pos: "n." },
+            { word: "mix up", phonetic: "", meaning: "混淆", pos: "phrase." },
+            { word: "monitor", phonetic: "", meaning: "班长；监视器", pos: "n." },
+            { word: "most", phonetic: "", meaning: "最；极其", pos: "adv." },
+            { word: "motivation", phonetic: "", meaning: "动机，动力", pos: "n." },
+            { word: "motorway", phonetic: "", meaning: "高速公路", pos: "n." },
+            { word: "mourned", phonetic: "", meaning: "哀悼", pos: "v." },
+            { word: "mystery", phonetic: "", meaning: "神秘的事物", pos: "n." },
+            { word: "nail", phonetic: "", meaning: "钉子；指甲", pos: "n." },
+            { word: "navigate", phonetic: "", meaning: "导航；航行", pos: "v." },
+            { word: "needy", phonetic: "", meaning: "贫困的", pos: "adj." },
+            { word: "nice", phonetic: "", meaning: "美好的", pos: "adj." },
+            { word: "non-fiction", phonetic: "", meaning: "非小说类文学作品", pos: "n." },
+            { word: "nonverbal", phonetic: "", meaning: "非言语的", pos: "adj." },
+            { word: "not yet", phonetic: "", meaning: "还没有", pos: "phrase." },
+            { word: "note down", phonetic: "", meaning: "记录", pos: "phrase." },
+            { word: "numerous", phonetic: "", meaning: "众多的", pos: "adj." },
+            { word: "obtain", phonetic: "", meaning: "得到，获得", pos: "vt." },
+            { word: "off air", phonetic: "", meaning: "不在播出中", pos: "phrase." },
+            { word: "off duty", phonetic: "", meaning: "下了班的", pos: "phrase." },
+            { word: "off the coast", phonetic: "", meaning: "在海岸附近", pos: "phrase." },
+            { word: "on end", phonetic: "", meaning: "全部地", pos: "adv." },
+            { word: "on loan", phonetic: "", meaning: "暂借的", pos: "phrase." },
+            { word: "on the occasion of", phonetic: "", meaning: "在...之际", pos: "phrase." },
+            { word: "once more", phonetic: "", meaning: "再一次", pos: "adv." },
+            { word: "onion", phonetic: "", meaning: "洋葱", pos: "n." },
+            { word: "operation", phonetic: "", meaning: "手术；操作", pos: "n." },
+            { word: "opposed", phonetic: "", meaning: "反对的", pos: "adj." },
+            { word: "originate", phonetic: "", meaning: "起源；创立", pos: "v." },
+            { word: "outlook", phonetic: "", meaning: "前景；观点", pos: "n." },
+            { word: "overestimate", phonetic: "", meaning: "高估", pos: "v." },
+            { word: "overlook", phonetic: "", meaning: "忽视；俯瞰", pos: "v." },
+            { word: "overuse", phonetic: "", meaning: "滥用", pos: "v." },
+            { word: "paled", phonetic: "", meaning: "变苍白", pos: "v." },
+            { word: "parrots", phonetic: "", meaning: "鹦鹉", pos: "n." },
+            { word: "pass out", phonetic: "", meaning: "昏倒", pos: "phrase." },
+            { word: "passenger", phonetic: "", meaning: "乘客", pos: "n." },
+            { word: "pay down", phonetic: "", meaning: "当场支付", pos: "phr." },
+            { word: "peacock", phonetic: "", meaning: "孔雀", pos: "n." },
+            { word: "penniless", phonetic: "", meaning: "一文不名的", pos: "adj." },
+            { word: "perform", phonetic: "", meaning: "执行；表演", pos: "v." },
+            { word: "perhaps", phonetic: "", meaning: "或许", pos: "adv." },
+            { word: "personal", phonetic: "", meaning: "个人的", pos: "adj." },
+            { word: "pitch", phonetic: "", meaning: "用力扔；推销", pos: "v." },
+            { word: "population", phonetic: "", meaning: "人口", pos: "n." },
+            { word: "postman", phonetic: "", meaning: "邮递员", pos: "n." },
+            { word: "potential", phonetic: "", meaning: "潜力；潜在的", pos: "n./adj." },
+            { word: "praise", phonetic: "", meaning: "赞扬", pos: "n." },
+            { word: "preserved", phonetic: "", meaning: "保护；保存", pos: "v./adj." },
+            { word: "priority", phonetic: "", meaning: "优先事项", pos: "n." },
+            { word: "proceed", phonetic: "", meaning: "继续进行", pos: "v." },
+            { word: "producing", phonetic: "", meaning: "生产", pos: "v." },
+            { word: "profound", phonetic: "", meaning: "深刻的", pos: "adj." },
+            { word: "profit", phonetic: "/ˈprɑːfɪt/", meaning: "收益，利润", pos: "n." },
+            { word: "profitable", phonetic: "", meaning: "有利可图的", pos: "adj." },
+            { word: "progression", phonetic: "", meaning: "进步；发展", pos: "n." },
+            { word: "proof", phonetic: "", meaning: "证明", pos: "n." },
+            { word: "properties", phonetic: "", meaning: "性质", pos: "n." },
+            { word: "pronunciation", phonetic: "", meaning: "发音", pos: "n." },
+            { word: "provide for", phonetic: "", meaning: "供给；为...作准备", pos: "phras." },
+            { word: "pull on", phonetic: "", meaning: "用力拉扯", pos: "phrase." },
+            { word: "pumpkin", phonetic: "", meaning: "南瓜", pos: "n." },
+            { word: "quite", phonetic: "", meaning: "相当，颇", pos: "adv." },
+            { word: "randomly", phonetic: "", meaning: "随便地", pos: "adv." },
+            { word: "rare", phonetic: "", meaning: "罕见的", pos: "adj." },
+            { word: "rarely", phonetic: "", meaning: "很少", pos: "adv." },
+            { word: "reading", phonetic: "", meaning: "阅读", pos: "n." },
+            { word: "reality", phonetic: "", meaning: "事实", pos: "n." },
+            { word: "receipt", phonetic: "", meaning: "收据", pos: "n." },
+            { word: "recognition", phonetic: "", meaning: "识别；认可", pos: "n." },
+            { word: "registry", phonetic: "", meaning: "登记处", pos: "n." },
+            { word: "rejected", phonetic: "", meaning: "拒绝", pos: "v./adj." },
+            { word: "relay to", phonetic: "", meaning: "指的是", pos: "phr." },
+            { word: "reliable", phonetic: "", meaning: "可靠的", pos: "adj." },
+            { word: "repeated", phonetic: "", meaning: "重复的", pos: "adj." },
+            { word: "reputation", phonetic: "", meaning: "名声", pos: "n." },
+            { word: "rerooted", phonetic: "", meaning: "重新生根", pos: "v." },
+            { word: "resistant", phonetic: "", meaning: "有抵抗力的", pos: "adj." },
+            { word: "reusable", phonetic: "", meaning: "可重复使用的", pos: "adj." },
+            { word: "revealing", phonetic: "", meaning: "揭示", pos: "v./adj." },
+            { word: "reverse", phonetic: "", meaning: "反面；倒退", pos: "n." },
+            { word: "revolve", phonetic: "", meaning: "旋转；围绕", pos: "v." },
+            { word: "riches", phonetic: "", meaning: "财富", pos: "n." },
+            { word: "ring back", phonetic: "", meaning: "回电话", pos: "phrase." },
+            { word: "risk", phonetic: "", meaning: "风险", pos: "n./v." },
+            { word: "roughly", phonetic: "", meaning: "粗略地", pos: "adv." },
+            { word: "sacrifice", phonetic: "", meaning: "牺牲", pos: "v." },
+            { word: "satisfactory", phonetic: "", meaning: "满意的", pos: "adj." },
+            { word: "sb could be forgiven for doing sth", phonetic: "", meaning: "某人做某事虽错但能理解", pos: "phrase." },
+            { word: "scan", phonetic: "", meaning: "审视；浏览", pos: "v." },
+            { word: "scented", phonetic: "", meaning: "有香味的", pos: "adj." },
+            { word: "seashell", phonetic: "", meaning: "贝壳", pos: "n." },
+            { word: "seaweed", phonetic: "", meaning: "海藻", pos: "n." },
+            { word: "sees through", phonetic: "", meaning: "看穿", pos: "phr." },
+            { word: "send up", phonetic: "", meaning: "使上升；关押", pos: "phrase." },
+            { word: "set out", phonetic: "", meaning: "出发；开始", pos: "phrase." },
+            { word: "settle for", phonetic: "", meaning: "满足于", pos: "phras." },
+            { word: "settle in", phonetic: "", meaning: "安顿下来", pos: "phrase." },
+            { word: "settler", phonetic: "", meaning: "定居者", pos: "n." },
+            { word: "setting", phonetic: "", meaning: "环境；背景", pos: "n." },
+            { word: "shape", phonetic: "", meaning: "塑造", pos: "vt." },
+            { word: "shine through", phonetic: "", meaning: "表现出来", pos: "phrase." },
+            { word: "shut off", phonetic: "", meaning: "关掉；停止", pos: "phrase." },
+            { word: "shy", phonetic: "", meaning: "害羞的", pos: "adj." },
+            { word: "silence", phonetic: "", meaning: "沉默", pos: "n." },
+            { word: "simple", phonetic: "", meaning: "简单的", pos: "adj." },
+            { word: "sincere", phonetic: "", meaning: "真诚的", pos: "adj." },
+            { word: "sing the same tune", phonetic: "", meaning: "表达相同的观点", pos: "phrase." },
+            { word: "sink", phonetic: "", meaning: "下沉", pos: "n." },
+            { word: "ski", phonetic: "", meaning: "滑雪", pos: "n." },
+            { word: "slightly", phonetic: "", meaning: "轻微地", pos: "adv." },
+            { word: "so", phonetic: "", meaning: "如此；那么", pos: "adv." },
+            { word: "so far", phonetic: "", meaning: "到目前为止", pos: "phrase." },
+            { word: "socket", phonetic: "", meaning: "插座", pos: "n." },
+            { word: "sockette", phonetic: "", meaning: "袜子", pos: "n." },
+            { word: "solid", phonetic: "", meaning: "坚固的", pos: "adj." },
+            { word: "somewhat", phonetic: "", meaning: "有点", pos: "adv." },
+            { word: "sorrow", phonetic: "", meaning: "悲伤", pos: "n." },
+            { word: "spaghetti", phonetic: "", meaning: "意大利面", pos: "n." },
+            { word: "sparking", phonetic: "", meaning: "引发；冒火花", pos: "v." },
+            { word: "spider", phonetic: "", meaning: "蜘蛛", pos: "n." },
+            { word: "spoon", phonetic: "", meaning: "勺子", pos: "n." },
+            { word: "standard", phonetic: "", meaning: "标准", pos: "n./adj." },
+            { word: "standout", phonetic: "", meaning: "杰出的", pos: "adj." },
+            { word: "strength", phonetic: "", meaning: "力量；实力", pos: "n." },
+            { word: "striking", phonetic: "", meaning: "引人注目的", pos: "adj." },
+            { word: "subjective", phonetic: "", meaning: "主观的", pos: "adj." },
+            { word: "substances", phonetic: "", meaning: "物质", pos: "n." },
+            { word: "sum up", phonetic: "", meaning: "总结", pos: "phrase." },
+            { word: "sunset", phonetic: "", meaning: "傍晚，落日", pos: "n." },
+            { word: "supervision", phonetic: "", meaning: "监督", pos: "n." },
+            { word: "surfer", phonetic: "", meaning: "冲浪者", pos: "n." },
+            { word: "survival", phonetic: "", meaning: "幸存", pos: "n." },
+            { word: "suspected", phonetic: "", meaning: "被怀疑的", pos: "v./adj." },
+            { word: "suspended", phonetic: "", meaning: "中止", pos: "v./adj." },
+            { word: "swallow", phonetic: "", meaning: "吞；燕子", pos: "v./n." },
+            { word: "swift", phonetic: "", meaning: "迅速的", pos: "adj." },
+            { word: "take notes", phonetic: "", meaning: "记笔记", pos: "phrase." },
+            { word: "take on", phonetic: "", meaning: "承担；呈现", pos: "phrase." },
+            { word: "take the place of", phonetic: "", meaning: "代替", pos: "phrase." },
+            { word: "teenage", phonetic: "", meaning: "青少年的", pos: "adj." },
+            { word: "temporary", phonetic: "", meaning: "暂时的", pos: "adj." },
+            { word: "terrify", phonetic: "", meaning: "恐吓", pos: "vt." },
+            { word: "theories", phonetic: "", meaning: "理论", pos: "n." },
+            { word: "think through", phonetic: "", meaning: "全面考虑", pos: "phrase." },
+            { word: "threaten", phonetic: "", meaning: "威胁", pos: "vt." },
+            { word: "throughout", phonetic: "", meaning: "贯穿", pos: "prep." },
+            { word: "throw in", phonetic: "", meaning: "扔进", pos: "phrase." },
+            { word: "throw oneself into", phonetic: "", meaning: "投身于", pos: "phrase." },
+            { word: "timetable", phonetic: "", meaning: "时间表", pos: "n." },
+            { word: "timing", phonetic: "", meaning: "时机", pos: "n." },
+            { word: "tiring", phonetic: "", meaning: "令人疲倦的", pos: "adj." },
+            { word: "to a certain degree", phonetic: "", meaning: "在某种程度上", pos: "phrase." },
+            { word: "to be frank", phonetic: "", meaning: "坦率地说", pos: "phr." },
+            { word: "to one's surprise", phonetic: "", meaning: "出乎意料地", pos: "phr." },
+            { word: "toilet", phonetic: "", meaning: "厕所", pos: "n." },
+            { word: "toothbrush", phonetic: "", meaning: "牙刷", pos: "n." },
+            { word: "tribe", phonetic: "", meaning: "部落", pos: "n." },
+            { word: "under", phonetic: "", meaning: "在...下面", pos: "prep." },
+            { word: "uneasy", phonetic: "", meaning: "不安的", pos: "adj." },
+            { word: "unfair", phonetic: "", meaning: "不公正的", pos: "adj." },
+            { word: "unfairly", phonetic: "", meaning: "不公平地", pos: "adv." },
+            { word: "unfairness", phonetic: "", meaning: "不公平", pos: "n." },
+            { word: "unify", phonetic: "", meaning: "统一", pos: "v." },
+            { word: "uninterrupted", phonetic: "", meaning: "不间断的", pos: "adj." },
+            { word: "unless", phonetic: "", meaning: "除非", pos: "conj." },
+            { word: "untouched", phonetic: "", meaning: "原封不动的", pos: "adj." },
+            { word: "used", phonetic: "", meaning: "用过的；旧的", pos: "adj." },
+            { word: "vanish", phonetic: "", meaning: "消失", pos: "v." },
+            { word: "verbal", phonetic: "", meaning: "口头的", pos: "adj." },
+            { word: "vinegar", phonetic: "", meaning: "醋", pos: "n." },
+            { word: "vital", phonetic: "", meaning: "重要的", pos: "adj." },
+            { word: "washroom", phonetic: "", meaning: "洗手间", pos: "n." },
+            { word: "wave", phonetic: "", meaning: "挥手；波动", pos: "v." },
+            { word: "weak", phonetic: "", meaning: "虚弱的", pos: "adj." },
+            { word: "weigh up", phonetic: "", meaning: "估量", pos: "phrase." },
+            { word: "what do you mean", phonetic: "", meaning: "你是什么意思", pos: "phrase." },
+            { word: "wicked", phonetic: "", meaning: "邪恶的；淘气的", pos: "adj." },
+            { word: "winked", phonetic: "", meaning: "眨眼", pos: "v." },
+            { word: "with attention", phonetic: "", meaning: "专心致志地", pos: "phrase." },
+            { word: "witnessed", phonetic: "", meaning: "目睹", pos: "v." },
+            { word: "wonderland", phonetic: "", meaning: "仙境", pos: "n." },
+            { word: "wrong", phonetic: "", meaning: "错误的", pos: "adj." },
+            { word: "wrongly", phonetic: "", meaning: "错误地", pos: "adv." }
+        ];
+
+        // ---------- 全局变量 ----------
+        let currentIndex = 0;
+        // 从localStorage加载已掌握单词 (以word为标识)
+        let masteredWords = new Set(JSON.parse(localStorage.getItem('masteredWords')) || []);
+        let isFlipped = false;
+
+        // ---------- 初始化 ----------
+        function init() {
+            document.getElementById('total').textContent = vocabulary.length;
+            updateCard();
+            updateProgress();
+            generateList();
+            document.getElementById('mastered').textContent = masteredWords.size;
+
+            // 键盘控制
+            document.addEventListener('keydown', (e) => {
+                if (e.key === ' ' || e.key === 'Enter') {
+                    e.preventDefault();
+                    flipCard();
+                } else if (e.key === 'ArrowLeft') {
+                    prevCard();
+                } else if (e.key === 'ArrowRight') {
+                    nextCard();
+                } else if (e.key === 'm' || e.key === 'M') {
+                    markMastered();
+                }
+            });
+
+            // 触摸滑动
+            const container = document.getElementById('cardContainer');
+            let touchStartX = 0;
+            container.addEventListener('touchstart', e => {
+                touchStartX = e.changedTouches[0].screenX;
+            });
+            container.addEventListener('touchend', e => {
+                const touchEndX = e.changedTouches[0].screenX;
+                if (touchEndX < touchStartX - 50) nextCard();
+                if (touchEndX > touchStartX + 50) prevCard();
+            });
+        }
+
+        function updateCard() {
+            const card = vocabulary[currentIndex];
+            document.getElementById('cardWord').textContent = card.word;
+            document.getElementById('cardPhonetic').textContent = card.phonetic || ''; // 没有音标就留空
+            document.getElementById('cardMeaning').textContent = card.meaning;
+            document.getElementById('cardPos').textContent = card.pos;
+            document.getElementById('current').textContent = currentIndex + 1;
+
+            // 重置翻转
+            isFlipped = false;
+            document.getElementById('card').classList.remove('flipped');
+
+            // 根据是否掌握改变卡片正面背景
+            const front = document.getElementById('cardFront');
+            if (masteredWords.has(card.word)) {
+                front.style.background = 'linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%)';
+            } else {
+                front.style.background = 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)';
+            }
+        }
+
+        function flipCard() {
+            isFlipped = !isFlipped;
+            document.getElementById('card').classList.toggle('flipped');
+        }
+
+        function nextCard() {
+            if (currentIndex < vocabulary.length - 1) {
+                currentIndex++;
+                updateCard();
+                updateProgress();
+            }
+        }
+
+        function prevCard() {
+            if (currentIndex > 0) {
+                currentIndex--;
+                updateCard();
+                updateProgress();
+            }
+        }
+
+        function markMastered() {
+            const word = vocabulary[currentIndex].word;
+            if (masteredWords.has(word)) {
+                masteredWords.delete(word);
+            } else {
+                masteredWords.add(word);
+            }
+            // 保存到localStorage
+            localStorage.setItem('masteredWords', JSON.stringify([...masteredWords]));
+            document.getElementById('mastered').textContent = masteredWords.size;
+            updateCard(); // 更新背景
+        }
+
+        function updateProgress() {
+            const progress = ((currentIndex + 1) / vocabulary.length) * 100;
+            document.getElementById('progressFill').style.width = progress + '%';
+        }
+
+        function shuffleCards() {
+            // Fisher-Yates 洗牌
+            for (let i = vocabulary.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [vocabulary[i], vocabulary[j]] = [vocabulary[j], vocabulary[i]];
+            }
+            currentIndex = 0;
+            // 注意：masteredWords 不变，因为基于word
+            updateCard();
+            updateProgress();
+            generateList(); // 重新生成列表（顺序改变）
+        }
+
+        function toggleList() {
+            const listView = document.getElementById('listView');
+            const cardContainer = document.getElementById('cardContainer');
+            const navigation = document.getElementById('navigation');
+
+            if (listView.classList.contains('active')) {
+                listView.classList.remove('active');
+                cardContainer.style.display = 'block';
+                navigation.style.display = 'flex';
+            } else {
+                listView.classList.add('active');
+                cardContainer.style.display = 'none';
+                navigation.style.display = 'none';
+            }
+        }
+
+        function generateList() {
+            const content = document.getElementById('listContent');
+            content.innerHTML = '';
+            vocabulary.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'list-item';
+                const isMastered = masteredWords.has(item.word);
+                div.innerHTML = `
+                    <div>
+                        <div class="list-word">${item.word} ${isMastered ? '<span class="mastered-badge">✓已掌握</span>' : ''}</div>
+                        <div style="color:#999;font-size:0.9em;">${item.pos}</div>
+                    </div>
+                    <div class="list-meaning">${item.meaning}</div>
+                `;
+                div.onclick = () => {
+                    currentIndex = index;
+                    toggleList();
+                    updateCard();
+                    updateProgress();
+                };
+                content.appendChild(div);
+            });
+        }
+
+        function resetProgress() {
+            if (confirm('重置将清空所有“已掌握”标记，确定吗？')) {
+                masteredWords.clear();
+                localStorage.removeItem('masteredWords');
+                document.getElementById('mastered').textContent = 0;
+                updateCard(); // 刷新背景
+                generateList(); // 更新列表标记
+            }
+        }
+
+        // 启动
+        init();
+    </script>
+</body>
+</html>
